@@ -1,14 +1,20 @@
-name: Update Gallery Data
+name: Update Gallery Data (Manual)
 
 on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for running'
+        required: false
+        default: 'Manual update'
   pull_request:
     branches: [ main ]
     paths:
-      - 'webpage/pics/**'
+      - 'pics/**'
   push:
     branches: [ main ]
     paths:
-      - 'webpage/pics/**'
+      - 'pics/**'
 
 jobs:
   preview-gallery:
@@ -26,7 +32,6 @@ jobs:
         
     - name: Run scan.py to preview gallery data
       run: |
-        cd webpage
         python scan.py
         
     - name: Comment on PR with preview
@@ -34,7 +39,7 @@ jobs:
       with:
         script: |
           const fs = require('fs');
-          const path = 'webpage/gallery-data.json';
+          const path = 'gallery-data.json';
           
           if (fs.existsSync(path)) {
             const data = JSON.parse(fs.readFileSync(path, 'utf8'));
@@ -46,7 +51,7 @@ jobs:
             const { execSync } = require('child_process');
             const changedFiles = execSync('git diff --name-only HEAD~1 HEAD', { encoding: 'utf8' });
             const imageFiles = changedFiles.split('\n')
-              .filter(file => file.includes('webpage/pics/') && 
+              .filter(file => file.includes('pics/') && 
                            (file.endsWith('.jpg') || file.endsWith('.jpeg') || 
                             file.endsWith('.png') || file.endsWith('.webp') || file.endsWith('.gif')));
             
@@ -87,13 +92,39 @@ jobs:
         
     - name: Run scan.py to update gallery data
       run: |
-        cd webpage
         python scan.py
         
     - name: Commit and push changes
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add webpage/gallery-data.json
+        git add gallery-data.json
         git diff --staged --quiet || git commit -m "Auto-update gallery-data.json [skip ci]"
+        git push
+
+  manual-update:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Run scan.py to update gallery data
+      run: |
+        python scan.py
+        
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add gallery-data.json
+        git diff --staged --quiet || git commit -m "Manual update gallery-data.json [skip ci]"
         git push
