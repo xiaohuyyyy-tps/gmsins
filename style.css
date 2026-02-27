@@ -105,18 +105,23 @@ header h1 em {
   font-family: 'Cormorant Garamond', serif;
   line-height: 1.6;
   margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .poem-zh {
-  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
   font-weight: 400;
   color: var(--gold);
   letter-spacing: 0.25em;
 }
 
 .poem-fr {
-  font-size: clamp(0.85rem, 2vw, 1.05rem);
-  font-weight: 300;
+  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  font-weight: 400;
   font-style: italic;
   color: var(--blue-bright);
   letter-spacing: 0.08em;
@@ -124,12 +129,17 @@ header h1 em {
 }
 
 .poem-it {
-  font-size: clamp(0.8rem, 1.8vw, 0.95rem);
-  font-weight: 300;
+  font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+  font-weight: 400;
   font-style: italic;
   color: var(--text-muted);
   letter-spacing: 0.06em;
-  margin-top: 4px;
+}
+
+.poem-sep {
+  color: var(--text-muted);
+  font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+  opacity: 0.6;
 }
 
 .header-divider {
