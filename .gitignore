@@ -1,0 +1,9 @@
+# Ignore token file
+.github_token
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore Chrome profile
+chrome_profile/
