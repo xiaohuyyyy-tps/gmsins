@@ -1,0 +1,99 @@
+name: Update Gallery Data
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'webpage/pics/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'webpage/pics/**'
+
+jobs:
+  preview-gallery:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout PR code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Run scan.py to preview gallery data
+      run: |
+        cd webpage
+        python scan.py
+        
+    - name: Comment on PR with preview
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const path = 'webpage/gallery-data.json';
+          
+          if (fs.existsSync(path)) {
+            const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const totalImages = data.reduce((sum, day) => sum + day.images.length, 0);
+            const totalDates = data.length;
+            const latestDate = data[0]?.date || 'N/A';
+            
+            // Get changed files
+            const { execSync } = require('child_process');
+            const changedFiles = execSync('git diff --name-only HEAD~1 HEAD', { encoding: 'utf8' });
+            const imageFiles = changedFiles.split('\n')
+              .filter(file => file.includes('webpage/pics/') && 
+                           (file.endsWith('.jpg') || file.endsWith('.jpeg') || 
+                            file.endsWith('.png') || file.endsWith('.webp') || file.endsWith('.gif')));
+            
+            const comment = `🖼️ **Gallery Preview - Ready for Merge**
+            
+            📊 **Updated Statistics:**
+            - Total dates: ${totalDates}
+            - Total images: ${totalImages}
+            - Latest date: ${latestDate}
+            
+            📁 **New Images (${imageFiles.length}):**
+            ${imageFiles.map(file => \`- \${file.split('/').pop()}\`).join('\n')}
+            
+            ✅ Gallery data has been updated. Ready to merge!`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          }
+
+  update-gallery:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Run scan.py to update gallery data
+      run: |
+        cd webpage
+        python scan.py
+        
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add webpage/gallery-data.json
+        git diff --staged --quiet || git commit -m "Auto-update gallery-data.json [skip ci]"
+        git push
