@@ -12,7 +12,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
+from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError, Error as PlaywrightError
 
 try:
     from PIL import Image, ImageStat
@@ -30,12 +30,31 @@ async def wait_for_login(page):
     print("[*] Waiting for you to complete login (up to 3 minutes)...")
     try:
         await page.wait_for_url(
-            re.compile(r"https://www\.instagram\.com/(?!accounts/login)"),
+            re.compile(r"https://www\.instagram\.com/(?!accounts/login)(?!accounts/onetap)"),
             timeout=180_000,
         )
+        await page.wait_for_timeout(2000)
         print("[ok] Login detected.")
     except PlaywrightTimeoutError:
         raise RuntimeError("Login timed out after 3 minutes.")
+
+
+async def ensure_logged_in(page):
+    """Check if currently logged in; if not, navigate to login page and wait for manual login."""
+    is_logged_in = await page.evaluate("""
+        () => {
+            return !!document.cookie.match(/sessionid=/) ||
+                   !!document.querySelector('a[href*="/direct/inbox/"]') ||
+                   !!document.querySelector('svg[aria-label="Home"]') ||
+                   !!document.querySelector('a[href="/"][role="link"]');
+        }
+    """)
+    if not is_logged_in:
+        print("[!] Session appears expired or invalid. Redirecting to login...")
+        await page.goto("https://www.instagram.com/accounts/login/", wait_until="domcontentloaded", timeout=60000)
+        await wait_for_login(page)
+        return False
+    return True
 
 
 def get_today_dir() -> Path:
@@ -49,10 +68,10 @@ async def wait_for_media_loaded(page):
     """
     Waits until the largest img/video on the page is fully loaded.
     - img: naturalWidth > 0 and complete == true
-    - video: readyState >= 2 (HAVE_CURRENT_DATA)
-    Gives up after 8 seconds and proceeds anyway.
+    - video: readyState >= 4 (HAVE_ENOUGH_DATA) then paused at 0.5s for a stable frame
+    Gives up after 10 seconds and proceeds anyway.
     """
-    for _ in range(16):
+    for _ in range(20):
         result = await page.evaluate("""
             () => {
                 const imgs = Array.from(document.querySelectorAll('img')).filter(i => {
@@ -64,7 +83,7 @@ async def wait_for_media_loaded(page):
                     return r.width > 150 && r.height > 150;
                 });
                 if (videos.length > 0) {
-                    return videos.every(v => v.readyState >= 2);
+                    return videos.every(v => v.readyState >= 4);
                 }
                 if (imgs.length > 0) {
                     return imgs.every(i => i.complete && i.naturalWidth > 0);
@@ -73,8 +92,26 @@ async def wait_for_media_loaded(page):
             }
         """)
         if result:
-            return
+            break
         await page.wait_for_timeout(500)
+
+    await page.evaluate("""
+        () => {
+            const videos = Array.from(document.querySelectorAll('video')).filter(v => {
+                const r = v.getBoundingClientRect();
+                return r.width > 150 && r.height > 150;
+            });
+            for (const v of videos) {
+                v.pause();
+                if (v.duration && v.duration > 0.5) {
+                    v.currentTime = 0.5;
+                } else if (v.duration) {
+                    v.currentTime = v.duration * 0.1;
+                }
+            }
+        }
+    """)
+    await page.wait_for_timeout(600)
 
 
 def is_valid_screenshot(filepath: Path) -> bool:
@@ -194,20 +231,29 @@ async def run():
         await page.wait_for_timeout(2000)
 
         current = page.url
-        if "accounts/login" in current or "accounts/onetap" not in current and await page.query_selector("input[name='username']") is not None:
+        login_input = await page.query_selector("input[name='username']")
+        if "accounts/login" in current or login_input is not None:
+            print("[!] Not logged in. Please log in manually.")
             await page.goto("https://www.instagram.com/accounts/login/", wait_until="domcontentloaded", timeout=60000)
             await wait_for_login(page)
         else:
-            print("[ok] Already logged in (session reused).")
+            print("[ok] Session found, verifying...")
+            await ensure_logged_in(page)
 
         print(f"[*] Navigating to stories: {STORY_URL}")
         await page.goto(STORY_URL, wait_until="domcontentloaded", timeout=60000)
         await page.wait_for_timeout(3000)
 
+        if "accounts/login" in page.url or "accounts/onetap" in page.url:
+            print("[!] Instagram redirected to login after navigating to stories. Session expired.")
+            print("[!] Please log in manually in the browser window.")
+            await wait_for_login(page)
+            await page.goto(STORY_URL, wait_until="domcontentloaded", timeout=60000)
+            await page.wait_for_timeout(3000)
+
         story_count = 0
         max_stories = 50
 
-        consecutive_skips = 0
         while story_count < max_stories:
             current_url = page.url
             if "stories" not in current_url:
@@ -226,16 +272,14 @@ async def run():
                     await page.wait_for_timeout(3000)
                     continue
 
-            taken = await screenshot_story_frame(page, story_count, save_dir)
-            story_count += 1
-
-            if not taken:
-                consecutive_skips += 1
-                if consecutive_skips >= 3:
-                    print("[*] Too many consecutive skips, stopping.")
+            try:
+                taken = await screenshot_story_frame(page, story_count, save_dir)
+            except PlaywrightError as e:
+                if "Target page, context or browser has been closed" in str(e):
+                    print("[!] Browser/page was closed unexpectedly (possible session expiry).")
                     break
-            else:
-                consecutive_skips = 0
+                raise
+            story_count += 1
 
             next_btn_selectors = [
                 "button[aria-label='Next']",
