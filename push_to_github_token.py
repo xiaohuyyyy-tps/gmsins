@@ -89,7 +89,7 @@ def get_token():
     if save_choice in ['y', 'yes']:
         if not save_token(token):
             print("Token not saved, will use for this session only")
-            print("⚠️ Token not saved, will use for this session only")
+            print("[WARNING] Token not saved, will use for this session only")
     
     return token
 
@@ -97,11 +97,9 @@ def setup_git_config():
     """Setup basic git configuration"""
     print("[CONFIG] Setting up git configuration...")
     
-    # Get user info from token or ask
-    username = input("GitHub username: ").strip()
-    if not username:
-        print("[ERROR] Username required")
-        return False
+    # Fixed username
+    username = "xiaohuyyyy-tps"
+    print(f"[INFO] Using username: {username}")
     
     # Configure git user
     if not run_command(f'git config user.name "{username}"', cwd=str(TARGET_DIR)):
@@ -175,7 +173,11 @@ def push_to_github():
     """Push to GitHub repository"""
     print("[PUSH] Pushing to GitHub...")
     
-    # Try pushing to main branch first
+    # Try pulling first to handle remote changes
+    print("[SYNC] Pulling remote changes first...")
+    run_command("git pull origin main --allow-unrelated-histories", cwd=str(TARGET_DIR))
+    
+    # Try pushing to main branch
     if run_command("git push -u origin main", cwd=str(TARGET_DIR)):
         return True
     
