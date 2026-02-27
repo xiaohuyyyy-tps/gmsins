@@ -175,13 +175,19 @@ def push_to_github():
     
     # Try pulling first to handle remote changes
     print("[SYNC] Pulling remote changes first...")
-    run_command("git pull origin main --allow-unrelated-histories", cwd=str(TARGET_DIR))
+    pull_result = run_command("git pull origin main --allow-unrelated-histories", cwd=str(TARGET_DIR))
     
-    # Try pushing to main branch
-    if run_command("git push -u origin main", cwd=str(TARGET_DIR)):
-        return True
+    if not pull_result:
+        print("[WARNING] Pull failed, trying force push...")
+        # If pull fails, try force push
+        if run_command("git push -u origin main --force", cwd=str(TARGET_DIR)):
+            return True
+    else:
+        # If pull succeeded, try normal push
+        if run_command("git push -u origin main", cwd=str(TARGET_DIR)):
+            return True
     
-    # Try master branch if main fails
+    # Try master branch as fallback
     if run_command("git push -u origin master", cwd=str(TARGET_DIR)):
         return True
     
