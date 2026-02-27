@@ -97,11 +97,13 @@
       dateHeader.appendChild(dateCount);
 
       const grid = document.createElement("div");
-      grid.className = "photo-grid";
+      const count = entry.images.length;
+      const layoutClass = count === 1 ? "layout-1" : count === 2 ? "layout-2" : count === 3 ? "layout-3" : "layout-many";
+      grid.className = "photo-grid " + layoutClass;
 
-      entry.images.forEach((src) => {
+      entry.images.forEach((src, imgIdx) => {
         const flatIdx = flatImages.findIndex((f) => f.src === src);
-        const card = buildCard(src, entry.date, flatIdx);
+        const card = buildCard(src, entry.date, flatIdx, count > 1 ? imgIdx + 1 : 0, count);
         grid.appendChild(card);
       });
 
@@ -112,7 +114,7 @@
   }
 
   // ── Build photo card ───────────────────────────────
-  function buildCard(src, date, flatIdx) {
+  function buildCard(src, date, flatIdx, imgNum, totalInDate) {
     const card = document.createElement("div");
     card.className = "photo-card";
     card.setAttribute("role", "button");
@@ -124,6 +126,7 @@
     img.alt = "Instagram story — " + date;
     img.loading = "lazy";
     img.decoding = "async";
+    img.onload = function () { this.classList.add("loaded"); };
 
     const overlay = document.createElement("div");
     overlay.className = "card-overlay";
@@ -134,6 +137,13 @@
 
     card.appendChild(img);
     card.appendChild(overlay);
+
+    if (imgNum > 0 && totalInDate > 1) {
+      const badge = document.createElement("span");
+      badge.className = "card-index";
+      badge.textContent = imgNum + "/" + totalInDate;
+      card.appendChild(badge);
+    }
 
     card.addEventListener("click", () => openLightbox(flatIdx));
     card.addEventListener("keydown", (e) => {
