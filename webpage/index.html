@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gian Marco Schiaretti — Stories Archive</title>
+  <meta name="description" content="A curated archive of Instagram stories by Gian Marco Schiaretti, actor and singer." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ══ Header ══════════════════════════════════════ -->
+  <header>
+    <p class="header-eyebrow">Instagram Stories Archive</p>
+    <h1>Gian Marco <em>Schiaretti</em></h1>
+    <p class="header-subtitle">Actor &nbsp;·&nbsp; Singer &nbsp;·&nbsp; Musical Theatre</p>
+    <div class="header-divider">
+      <span></span>
+      <i>✦</i>
+      <span></span>
+    </div>
+  </header>
+
+  <!-- ══ Stats bar ════════════════════════════════════ -->
+  <div id="stats-bar">
+    <div>
+      <strong id="stat-dates">—</strong>
+      <span>Dates</span>
+    </div>
+    <div>
+      <strong id="stat-images">—</strong>
+      <span>Stories</span>
+    </div>
+    <div>
+      <strong id="stat-latest">—</strong>
+      <span>Latest</span>
+    </div>
+  </div>
+
+  <!-- ══ Controls ═════════════════════════════════════ -->
+  <div id="controls">
+    <div class="search-wrap">
+      <!-- Search icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input id="search-input" type="search" placeholder="Filter by date…" autocomplete="off" />
+    </div>
+
+    <button id="sort-btn" class="sort-btn" title="Toggle sort order">
+      <!-- Sort icon -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="15" y2="12"/>
+        <line x1="3" y1="18" x2="9" y2="18"/>
+      </svg>
+      <span class="sort-label">Newest First</span>
+    </button>
+  </div>
+
+  <!-- ══ Main gallery ══════════════════════════════════ -->
+  <main>
+    <div id="loading-state">Loading stories…</div>
+    <div id="empty-state">No stories found for that date.</div>
+    <div id="gallery"></div>
+  </main>
+
+  <!-- ══ Footer ═══════════════════════════════════════ -->
+  <footer>
+    <p>
+      All content belongs to
+      <a href="https://www.instagram.com/gianmarcoschiaretti/" target="_blank" rel="noopener">
+        @gianmarcoschiaretti
+      </a>
+      &nbsp;·&nbsp; Personal archive only
+    </p>
+  </footer>
+
+  <!-- ══ Scroll-to-top ════════════════════════════════ -->
+  <button id="scroll-top" aria-label="Scroll to top" title="Back to top">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+  </button>
+
+  <!-- ══ Lightbox ══════════════════════════════════════ -->
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Story viewer">
+
+    <button id="lightbox-close" aria-label="Close viewer">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <button id="lightbox-prev" class="lightbox-nav" aria-label="Previous story">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+
+    <img id="lightbox-img" src="" alt="" tabindex="-1" />
+
+    <button id="lightbox-next" class="lightbox-nav" aria-label="Next story">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+
+    <p id="lightbox-caption"></p>
+    <p class="lightbox-counter" id="lightbox-counter"></p>
+  </div>
+
+  <script src="gallery.js"></script>
+</body>
+</html>
