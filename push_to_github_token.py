@@ -169,25 +169,49 @@ def stage_and_commit():
     
     return True
 
+def get_current_branch():
+    """Get the current git branch name"""
+    try:
+        result = subprocess.run(
+            "git rev-parse --abbrev-ref HEAD",
+            shell=True,
+            cwd=str(TARGET_DIR),
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        current_branch = result.stdout.strip()
+        print(f"[INFO] Current branch: {current_branch}")
+        return current_branch
+    except subprocess.CalledProcessError:
+        print("[WARNING] Could not determine current branch, defaulting to 'main'")
+        return "main"
+
 def push_to_github():
     """Push to GitHub repository"""
     print("[PUSH] Pushing to GitHub...")
     
+    # Get current branch
+    current_branch = get_current_branch()
+    
     # Try pulling first to handle remote changes
-    print("[SYNC] Pulling remote changes first...")
-    pull_result = run_command("git pull origin main --allow-unrelated-histories", cwd=str(TARGET_DIR))
+    print(f"[SYNC] Pulling remote changes for branch '{current_branch}'...")
+    pull_result = run_command(f"git pull origin {current_branch} --allow-unrelated-histories", cwd=str(TARGET_DIR))
     
     if not pull_result:
-        print("[WARNING] Pull failed, trying force push...")
+        print(f"[WARNING] Pull failed for branch '{current_branch}', trying force push...")
         # If pull fails, try force push
-        if run_command("git push -u origin main --force", cwd=str(TARGET_DIR)):
+        if run_command(f"git push -u origin {current_branch} --force", cwd=str(TARGET_DIR)):
             return True
     else:
         # If pull succeeded, try normal push
-        if run_command("git push -u origin main", cwd=str(TARGET_DIR)):
+        if run_command(f"git push -u origin {current_branch}", cwd=str(TARGET_DIR)):
             return True
     
-    # Try master branch as fallback
+    # If current branch push fails, try main/master as fallback
+    print("[INFO] Trying fallback branches...")
+    if run_command("git push -u origin main", cwd=str(TARGET_DIR)):
+        return True
     if run_command("git push -u origin master", cwd=str(TARGET_DIR)):
         return True
     
